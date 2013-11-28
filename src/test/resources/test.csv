@@ -1,0 +1,3 @@
+mandatory string field      , mandatoryIntField, optionalStringField, OPTIONAL DATE FIELD
+Random1                     , 23               ,                    , 13/02/1989
+Random2                     , 25                ,"with, comma"      , 20/02/1986

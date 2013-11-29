@@ -14,11 +14,12 @@ import java.io.InputStream;
 
 public class CSVParser {
 
-    public int process(InputStream inputStream, ModelClass modelClass, RecordHandler recordHandler)
+    public int process(InputStream inputStream, Class dataTypeClass, RecordHandler recordHandler)
             throws UploadException {
 
         CsvBeanReader csvBeanReader = null;
         String[] headers = null;
+        ModelClass modelClass = new ModelClass(dataTypeClass);
 
         try {
             csvBeanReader = new CsvBeanReader(modelClass, inputStream);
@@ -26,7 +27,7 @@ public class CSVParser {
             csvBeanReader.validateHeaders();
             Importable importedModel;
 
-            while ((importedModel = csvBeanReader.readWithCellProcessors()) != null) {
+            while ((importedModel = csvBeanReader.read()) != null) {
                 recordHandler.execute(importedModel, csvBeanReader.getRowNumber());
             }
         } catch (SuperCsvConstraintViolationException constraintException) {
@@ -39,7 +40,7 @@ public class CSVParser {
             createHeaderException("incorrect.data.type", headers, processorException);
         } catch (SuperCsvException superCsvException) {
             if (csvBeanReader.length() > headers.length) {
-                throw new UploadException("incorrect.file.format");
+                throw new UploadException("incorrect.file.format.data.outside.header.scope.found");
             }
 
             createDataException("column.do.not.match", headers, superCsvException);

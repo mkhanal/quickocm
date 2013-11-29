@@ -43,10 +43,6 @@ public class CsvBeanReader {
     }
 
     public Importable read() throws IOException {
-        return dozerBeanReader.read(modelClass.getClazz());
-    }
-
-    public Importable readWithCellProcessors() throws IOException {
         return dozerBeanReader.read(modelClass.getClazz(), processors);
     }
 

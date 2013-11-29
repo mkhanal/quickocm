@@ -11,7 +11,6 @@ import org.quickocm.Importable;
 import org.quickocm.exception.UploadException;
 import org.quickocm.model.DummyImportable;
 import org.quickocm.model.DummyRecordHandler;
-import org.quickocm.model.ModelClass;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,11 +29,8 @@ public class CSVParserTest {
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
 
-    ModelClass dummyImportableClass;
-
     @Before
     public void setUp() throws Exception {
-        dummyImportableClass = new ModelClass(DummyImportable.class);
         csvParser = new CSVParser();
         recordHandler = new DummyRecordHandler();
     }
@@ -48,7 +44,7 @@ public class CSVParserTest {
 
         InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
 
-        csvParser.process(inputStream, dummyImportableClass, recordHandler);
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
 
         List<Importable> importedObjects = recordHandler.getImportedObjects();
         assertEquals(23, ((DummyImportable) importedObjects.get(0)).getMandatoryIntField());
@@ -61,7 +57,7 @@ public class CSVParserTest {
     public void shouldParseFromFile() throws Exception {
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("test.csv");
 
-        csvParser.process(inputStream, dummyImportableClass, recordHandler);
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
         List<Importable> importedObjects = recordHandler.getImportedObjects();
 
         final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("dd/MM/yyyy");
@@ -101,7 +97,7 @@ public class CSVParserTest {
 
         expectedEx.expect(uploadExceptionMatcher("missing.mandatory", "Mandatory String Field", "of Record No. ", "2"));
 
-        csvParser.process(inputStream, dummyImportableClass, recordHandler);
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
 
 
@@ -116,7 +112,7 @@ public class CSVParserTest {
 
         expectedEx.expect(uploadExceptionMatcher("incorrect.data.type", "OPTIONAL INT FIELD", "of Record No. ", "2"));
 
-        csvParser.process(inputStream, dummyImportableClass, recordHandler);
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
 
     @Test
@@ -130,7 +126,7 @@ public class CSVParserTest {
 
         expectedEx.expect(uploadExceptionMatcher("error.upload.header.missing", "2"));
 
-        csvParser.process(inputStream, dummyImportableClass, recordHandler);
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
 
     @Test
@@ -144,7 +140,7 @@ public class CSVParserTest {
         expectedEx.expect(UploadException.class);
         expectedEx.expectMessage("incorrect.file.format");
 
-        csvParser.process(inputStream, dummyImportableClass, recordHandler);
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
 
     @Test
@@ -157,7 +153,7 @@ public class CSVParserTest {
 
         expectedEx.expect(uploadExceptionMatcher("incorrect.date.format", "OPTIONAL DATE FIELD", "of Record No. ", "1"));
 
-        csvParser.process(inputStream, dummyImportableClass, recordHandler);
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
 
     @Test
@@ -169,7 +165,7 @@ public class CSVParserTest {
         InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
 
 
-        csvParser.process(inputStream, dummyImportableClass, recordHandler);
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
         DummyImportable dummyImportable = (DummyImportable) recordHandler.getImportedObjects().get(0);
         assertThat(dummyImportable.getDummyNestedField().getCode(), is("code1"));
     }
@@ -182,7 +178,7 @@ public class CSVParserTest {
 
         InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
 
-        csvParser.process(inputStream, dummyImportableClass, recordHandler);
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
         DummyImportable dummyImportable = (DummyImportable) recordHandler.getImportedObjects().get(0);
         assertThat(dummyImportable.getMultipleNestedFields().getEntityCode1(), is("code1-1"));
         assertThat(dummyImportable.getMultipleNestedFields().getEntityCode2(), is("code1-2"));

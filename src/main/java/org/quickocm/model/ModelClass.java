@@ -3,14 +3,17 @@ package org.quickocm.model;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.Predicate;
+import org.apache.commons.collections.Transformer;
+import org.apache.commons.lang.StringUtils;
 import org.quickocm.Importable;
 import org.quickocm.annotation.ImportField;
 import org.quickocm.annotation.ImportFields;
 import org.quickocm.exception.UploadException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import static java.util.Arrays.asList;
 
 public class ModelClass {
     private Class<? extends Importable> clazz;
@@ -31,20 +34,9 @@ public class ModelClass {
 
     public String[] getFieldNameMappings(String[] headers) {
         List<String> fieldMappings = new ArrayList<String>();
-        for (String header : headers) {
-            Field importField = findImportFieldWithName(header);
-            if (importField != null) {
-                String nestedProperty = importField.getNested();
-                if (nestedProperty.isEmpty()) {
-                    fieldMappings.add(importField.getField().getName());
-                } else {
-                    fieldMappings.add(importField.getField().getName() + "." + nestedProperty);
-                }
-            } else {
-                fieldMappings.add(null);
-            }
 
-        }
+        CollectionUtils.collect(asList(headers), new HeaderToFieldNameTransformer(), fieldMappings);
+
         return fieldMappings.toArray(new String[fieldMappings.size()]);
     }
 
@@ -60,9 +52,11 @@ public class ModelClass {
     }
 
     private List<Field> fieldsWithImportFieldAnnotation() {
-        List<java.lang.reflect.Field> fieldsList = Arrays.asList(clazz.getDeclaredFields());
+        List<java.lang.reflect.Field> fieldsList = asList(clazz.getDeclaredFields());
         List<Field> result = new ArrayList<Field>();
+
         for (java.lang.reflect.Field field : fieldsList) {
+
             if (field.isAnnotationPresent(ImportField.class)) {
                 result.add(new Field(field, field.getAnnotation(ImportField.class)));
             }
@@ -79,11 +73,11 @@ public class ModelClass {
     }
 
     private void validateNullHeaders(List<String> headers) throws UploadException {
+        if (headers == null) throw new UploadException("error.upload.csv.empty");
+
         for (int i = 0; i < headers.size(); i++) {
-            if (headers.get(i) == null) {
-                String missingHeaderPosition = i + 1 + "";
-                throw new UploadException("error.upload.header.missing", missingHeaderPosition);
-            }
+            if (StringUtils.isBlank(headers.get(i)))
+                throw new UploadException("error.upload.header.missing", Integer.toString(i + 1));
         }
     }
 
@@ -136,13 +130,29 @@ public class ModelClass {
         return clazz;
     }
 
-
     public boolean isAcceptExtraHeaders() {
         return acceptExtraHeaders;
     }
 
     public void setAcceptExtraHeaders(boolean acceptExtraHeaders) {
         this.acceptExtraHeaders = acceptExtraHeaders;
+    }
+
+    private class HeaderToFieldNameTransformer implements Transformer {
+
+        @Override
+        public Object transform(Object headerName) {
+            Field importField = findImportFieldWithName((String) headerName);
+
+            if (importField == null) return null;
+
+            String nestedProperty = importField.getNested();
+
+            if (nestedProperty.isEmpty())
+                return importField.getField().getName();
+
+            return (importField.getField().getName() + "." + nestedProperty);
+        }
     }
 
 

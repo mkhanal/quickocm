@@ -1,9 +1,8 @@
 package org.quickocm.processor;
 
-import org.quickocm.model.Field;
 import org.quickocm.model.ModelClass;
+import org.quickocm.processor.transformer.HeaderToProcessorTransformer;
 import org.supercsv.cellprocessor.*;
-import org.supercsv.cellprocessor.constraint.NotNull;
 import org.supercsv.cellprocessor.constraint.StrRegEx;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 
@@ -11,6 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.commons.collections.CollectionUtils.collect;
 
 public class CsvCellProcessors {
 
@@ -27,22 +28,19 @@ public class CsvCellProcessors {
         typeMappings.put("BigDecimal", new ParseBigDecimal());
     }
 
-    public static List<CellProcessor> getProcessors(ModelClass modelClass, List<String> headers) {
-        List<CellProcessor> processors = new ArrayList<CellProcessor>();
-        for (String header : headers) {
-            Field field = modelClass.findImportFieldWithName(header);
-            CellProcessor processor = null;
-            if (field != null) {
-                processor = chainTypeProcessor(field);
-            }
-            processors.add(processor);
-        }
-        return processors;
+    public CsvCellProcessors() {
+
     }
 
+    public CsvCellProcessors(Map<String, CellProcessor> typeMappings) {
+        this.typeMappings = typeMappings;
+    }
 
-    private static CellProcessor chainTypeProcessor(Field field) {
-        CellProcessor mappedProcessor = typeMappings.get(field.getType());
-        return field.isMandatory() ? new NotNull(mappedProcessor) : new Optional(mappedProcessor);
+    public List<CellProcessor> getProcessors(final ModelClass modelClass, List<String> headers) {
+        List<CellProcessor> processors = new ArrayList<CellProcessor>();
+
+        collect(headers, new HeaderToProcessorTransformer(modelClass, typeMappings), processors);
+
+        return processors;
     }
 }

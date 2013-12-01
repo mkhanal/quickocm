@@ -18,11 +18,14 @@ import java.io.InputStream;
 import java.util.List;
 
 import static junit.framework.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-import static org.quickocm.matchers.ExceptionMatcher.uploadExceptionMatcher;
 
 public class CSVParserTest {
+
+    public static final String ENCODING = "UTF-8";
+
     private CSVParser csvParser;
     private DummyRecordHandler recordHandler;
 
@@ -42,7 +45,7 @@ public class CSVParserTest {
                         " Random1               , 23\n" +
                         " Random2                , 25\n";
 
-        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
         csvParser.process(inputStream, DummyImportable.class, recordHandler);
 
@@ -93,13 +96,27 @@ public class CSVParserTest {
                         ",234\n" +
                         "RandomString3,2566\n";
 
-        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
-        expectedEx.expect(uploadExceptionMatcher("missing.mandatory", "Mandatory String Field", "of Record No. ", "2"));
+        expectedEx.expect(equalTo(new UploadException("missing.mandatory", "Mandatory String Field", "record.number.2")));
 
         csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
 
+    @Test
+    public void shouldThrowExceptionIfCsvAndModelHaveDifferentHeaders() throws Exception {
+        String csvInput =
+                "Mandatory String Field,mandatoryIntegersField\n" +
+                        "RandomString1,2533\n" +
+                        "RamdomString2,234\n" +
+                        "RandomString3,2566\n";
+
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
+
+        expectedEx.expect(equalTo(new UploadException("error.upload.invalid.header", "[mandatoryintegersfield]")));
+
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
+    }
 
     @Test
     public void shouldUseHeadersFromCSVToReportIncorrectDataTypeError() throws Exception {
@@ -108,9 +125,9 @@ public class CSVParserTest {
                         "RandomString1, 2533, \n" +
                         "RandomString2, 123, random\n";
 
-        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
-        expectedEx.expect(uploadExceptionMatcher("incorrect.data.type", "OPTIONAL INT FIELD", "of Record No. ", "2"));
+        expectedEx.expect(equalTo(new UploadException("incorrect.data.type", "OPTIONAL INT FIELD", "record.number.2")));
 
         csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
@@ -122,23 +139,35 @@ public class CSVParserTest {
                         "RandomString1,2533\n" +
                         "RandomString2,abc123\n";
 
-        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
-        expectedEx.expect(uploadExceptionMatcher("error.upload.header.missing", "2"));
+        expectedEx.expect(equalTo(new UploadException("error.upload.header.missing", "2")));
 
         csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
 
     @Test
-    public void shouldReportFewerOrMoreColumnData() throws IOException {
+    public void shouldReportMoreColumnDataThanHeaders() throws IOException {
         String csvInput =
                 "Mandatory String Field,mandatoryIntField,optionalStringField,OPTIONAL INT FIELD\n" +
                         "a,1,,,\n";
 
-        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
-        expectedEx.expect(UploadException.class);
-        expectedEx.expectMessage("incorrect.file.format");
+        expectedEx.expect(equalTo(new UploadException("extra.columns.than.headers.found", "Mandatory String Field", "record.number.1")));
+
+        csvParser.process(inputStream, DummyImportable.class, recordHandler);
+    }
+
+    @Test
+    public void shouldReportFewerColumnDataThanHeaders() throws IOException {
+        String csvInput =
+                "Mandatory String Field,mandatoryIntField,optionalStringField,OPTIONAL INT FIELD\n" +
+                        "a,1,\n";
+
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
+
+        expectedEx.expect(equalTo(new UploadException("fewer.columns.than.headers.found", "Mandatory String Field", "record.number.1")));
 
         csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
@@ -149,9 +178,9 @@ public class CSVParserTest {
                 " Random1               , 23, 99/99/99\n" +
                 " Random2                , 25, 19/12/2012\n";
 
-        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
-        expectedEx.expect(uploadExceptionMatcher("incorrect.date.format", "OPTIONAL DATE FIELD", "of Record No. ", "1"));
+        expectedEx.expect(equalTo(new UploadException("incorrect.date.format", "OPTIONAL DATE FIELD", "record.number.1")));
 
         csvParser.process(inputStream, DummyImportable.class, recordHandler);
     }
@@ -162,7 +191,7 @@ public class CSVParserTest {
                 " Random1               , 23, code1, 19/1/1990\n" +
                 " Random2                , 25, code2,\n";
 
-        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
 
         csvParser.process(inputStream, DummyImportable.class, recordHandler);
@@ -176,7 +205,7 @@ public class CSVParserTest {
                 " Random1               , 23, code1-1, code1-2\n" +
                 " Random2                , 25, code2-1, code2-2\n";
 
-        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes("UTF-8"));
+        InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
         csvParser.process(inputStream, DummyImportable.class, recordHandler);
         DummyImportable dummyImportable = (DummyImportable) recordHandler.getImportedObjects().get(0);

@@ -20,16 +20,7 @@ public class CsvBeanReader {
     private ModelClass modelClass;
     private CsvDozerBeanReader dozerBeanReader;
     private CellProcessor[] processors;
-
     private String[] headers;
-
-    public String[] getHeaders() {
-        return headers;
-    }
-
-    public void setHeaders(String[] headers) {
-        this.headers = headers;
-    }
 
     public CsvBeanReader(ModelClass modelClass, InputStream inputStream) throws IOException {
         this(modelClass, inputStream, new CsvPreference.Builder(CsvPreference.STANDARD_PREFERENCE)
@@ -58,20 +49,19 @@ public class CsvBeanReader {
         modelClass.validateHeaders(asList(headers));
     }
 
+    public String[] getHeaders() {
+        return headers;
+    }
+
     private void configureDozerBeanReader(InputStream inputStream, CsvPreference csvPreference) throws IOException {
         dozerBeanReader = new CsvDozerBeanReader(new BufferedReader(new InputStreamReader(inputStream)), csvPreference);
-        headers = readHeaders();
+        headers = dozerBeanReader.getHeader(true);
         String[] mappings = modelClass.getFieldNameMappings(headers);
         dozerBeanReader.configureBeanMapping(modelClass.getClazz(), mappings);
     }
 
-    private String[] readHeaders() throws IOException {
-        String[] headers = dozerBeanReader.getHeader(true);
-        return headers == null ? new String[0] : headers;
-    }
-
     private void configureProcessors() {
-        List<CellProcessor> cellProcessors = CsvCellProcessors.getProcessors(modelClass, asList(headers));
+        List<CellProcessor> cellProcessors = new CsvCellProcessors().getProcessors(modelClass, asList(headers));
         processors = cellProcessors.toArray(new CellProcessor[cellProcessors.size()]);
     }
 }

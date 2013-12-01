@@ -19,31 +19,27 @@ public class CSVParser {
 
         CsvBeanReader csvBeanReader = null;
         String[] headers = null;
-        ModelClass modelClass = new ModelClass(dataTypeClass);
 
         try {
-            csvBeanReader = new CsvBeanReader(modelClass, inputStream);
+            csvBeanReader = new CsvBeanReader(new ModelClass(dataTypeClass), inputStream);
             headers = csvBeanReader.getHeaders();
             csvBeanReader.validateHeaders();
-            Importable importedModel;
+            invokeRecordHandlerForEachRow(recordHandler, csvBeanReader);
 
-            while ((importedModel = csvBeanReader.read()) != null) {
-                recordHandler.execute(importedModel, csvBeanReader.getRowNumber());
-            }
-        } catch (SuperCsvConstraintViolationException constraintException) {
-            if (constraintException.getMessage().contains("^\\d{1,2}/\\d{1,2}/\\d{4}$")) {
-                createHeaderException("incorrect.date.format", headers, constraintException);
-            }
+        } catch (SuperCsvConstraintViolationException e) {
+            String error = e.getMessage().contains("^\\d{1,2}/\\d{1,2}/\\d{4}$")
+                    ? "incorrect.date.format"
+                    : "missing.mandatory";
 
-            createHeaderException("missing.mandatory", headers, constraintException);
+            throwUploadExceptionForInvalidData(error, headers, e);
+
         } catch (SuperCsvCellProcessorException processorException) {
-            createHeaderException("incorrect.data.type", headers, processorException);
-        } catch (SuperCsvException superCsvException) {
-            if (csvBeanReader.length() > headers.length) {
-                throw new UploadException("incorrect.file.format.data.outside.header.scope.found");
-            }
-
-            createDataException("column.do.not.match", headers, superCsvException);
+            throwUploadExceptionForInvalidData("incorrect.data.type", headers, processorException);
+        } catch (SuperCsvException e) {
+            String error = csvBeanReader.length() > headers.length
+                    ? "extra.columns.than.headers.found"
+                    : "fewer.columns.than.headers.found";
+            throwUploadExceptionForInvalidData(error, headers, e);
         } catch (IOException e) {
             throw new UploadException(e.getStackTrace().toString());
         }
@@ -51,17 +47,18 @@ public class CSVParser {
         return csvBeanReader.getRowNumber() - 1;
     }
 
+    private void invokeRecordHandlerForEachRow(RecordHandler recordHandler, CsvBeanReader csvBeanReader) throws IOException {
+        Importable importedModel;
+        while ((importedModel = csvBeanReader.read()) != null) {
+            recordHandler.execute(importedModel, csvBeanReader.getRowNumber());
+        }
+    }
 
-    private void createHeaderException(String error, String[] headers, SuperCsvException exception) {
+    private void throwUploadExceptionForInvalidData(String error, String[] headers, SuperCsvException exception) {
         CsvContext csvContext = exception.getCsvContext();
         String header = headers[csvContext.getColumnNumber() - 1];
         Integer rowNum = csvContext.getRowNumber() - 1;
-        throw new UploadException(error, header, "of Record No. ", rowNum.toString());
+        throw new UploadException(error, header, "record.number." + rowNum.toString());
     }
 
-    private void createDataException(String error, String[] headers, SuperCsvException exception) {
-        CsvContext csvContext = exception.getCsvContext();
-        Integer rowNum = csvContext.getRowNumber() - 1;
-        throw new UploadException(error, headers.toString(), "in Record No. ", rowNum.toString(), csvContext.getRowSource().toString());
-    }
 }

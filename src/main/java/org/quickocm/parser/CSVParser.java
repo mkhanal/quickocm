@@ -14,14 +14,25 @@ import java.io.InputStream;
 
 public class CSVParser {
 
-    public int process(InputStream inputStream, Class dataTypeClass, RecordHandler recordHandler)
+    /**
+     * Processes a csv input stream for the given type and invokes designated record handler for each field.
+     * @param inputStream The input stream of the csv file.
+     * @param clazz  The class of which each row is to be made object of.
+     * @param recordHandler The Record Handler which is invoked with the parameter of each.
+     * @return The row number of the record in csv that has just been processed.
+     * @throws UploadException when The csv
+     *      1. is empty, 2. is of invalid type 3. has data types that can not be handled
+     *      4. has missing mandatory fields 5. has missing headers 6. input stream can not be read
+     *      5. has columns with data in invalid format
+     */
+    public int process(InputStream inputStream, Class clazz, RecordHandler recordHandler)
             throws UploadException {
 
         CsvBeanReader csvBeanReader = null;
         String[] headers = null;
 
         try {
-            csvBeanReader = new CsvBeanReader(new ModelClass(dataTypeClass), inputStream);
+            csvBeanReader = new CsvBeanReader(new ModelClass(clazz), inputStream);
             headers = csvBeanReader.getHeaders();
             csvBeanReader.validateHeaders();
             invokeRecordHandlerForEachRow(recordHandler, csvBeanReader);

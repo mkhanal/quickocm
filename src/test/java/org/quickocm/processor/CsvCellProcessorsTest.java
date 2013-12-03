@@ -1,9 +1,6 @@
 package org.quickocm.processor;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.quickocm.model.DummyImportable;
 import org.quickocm.model.ModelClass;
 import org.supercsv.cellprocessor.ift.CellProcessor;
@@ -15,8 +12,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 
-@RunWith(MockitoJUnitRunner.class)
-@PrepareForTest(CsvCellProcessors.class)
 public class CsvCellProcessorsTest {
 
     @Test

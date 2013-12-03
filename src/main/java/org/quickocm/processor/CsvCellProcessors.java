@@ -1,8 +1,10 @@
 package org.quickocm.processor;
 
+import org.apache.commons.collections.Transformer;
+import org.quickocm.model.Field;
 import org.quickocm.model.ModelClass;
-import org.quickocm.processor.transformer.HeaderToProcessorTransformer;
 import org.supercsv.cellprocessor.*;
+import org.supercsv.cellprocessor.constraint.NotNull;
 import org.supercsv.cellprocessor.constraint.StrRegEx;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 
@@ -28,19 +30,25 @@ public class CsvCellProcessors {
         typeMappings.put("BigDecimal", new ParseBigDecimal());
     }
 
-    public CsvCellProcessors() {
-
-    }
-
-    public CsvCellProcessors(Map<String, CellProcessor> typeMappings) {
-        this.typeMappings = typeMappings;
-    }
-
-    public List<CellProcessor> getProcessors(final ModelClass modelClass, List<String> headers) {
+    public static List<CellProcessor> getProcessors(final ModelClass modelClass, List<String> headers) {
         List<CellProcessor> processors = new ArrayList<CellProcessor>();
 
-        collect(headers, new HeaderToProcessorTransformer(modelClass, typeMappings), processors);
+        collect(headers, getHeaderToProcessorTransformer(modelClass), processors);
 
         return processors;
+    }
+
+    private static Transformer getHeaderToProcessorTransformer(final ModelClass modelClass) {
+        return new Transformer() {
+            @Override
+            public Object transform(Object headerObject) {
+                Field field = modelClass.findImportFieldWithName((String) headerObject);
+
+                if (field == null) return null;
+
+                CellProcessor mappedProcessor = typeMappings.get(field.getType());
+                return field.isMandatory() ? new NotNull(mappedProcessor) : new Optional(mappedProcessor);
+            }
+        };
     }
 }

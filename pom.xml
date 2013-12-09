@@ -91,28 +91,14 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
-                    <!--<execution>-->
-                    <!--<id>verify</id>-->
-                    <!--<goals>-->
-                    <!--<goal>check</goal>-->
-                    <!--</goals>-->
-                    <!--<configuration>-->
-                    <!--<rules>-->
-                    <!--<rule>-->
-                    <!--<element>BUNDLE</element>-->
-                    <!--<limits>-->
-                    <!--<limit>-->
-                    <!--<counter>COMPLEXITY</counter>-->
-                    <!--<value>COVEREDRATIO</value>-->
-                    <!--<minimum>0.80</minimum>-->
-                    <!--</limit>-->
-                    <!--</limits>-->
-                    <!--</rule>-->
-                    <!--</rules>-->
-                    <!--</configuration>-->
-                    <!--</execution>-->
                 </executions>
             </plugin>
         </plugins>
     </build>
+    <developers>
+        <developer>
+            <name>Mridul Khanal</name>
+            <url>https://github.com/mkhanal</url>
+        </developer>
+    </developers>
 </project>

@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>QuickOCM by mkhanal</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>QuickOCM</h1>
+        <p>Object CSV Mapper for Java</p>
+        <p class="view"><a href="https://github.com/mkhanal/quickocm">View the Project on GitHub <small>mkhanal/quickocm</small></a></p>
+        <ul>
+          <li><a href="https://github.com/mkhanal/quickocm/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/mkhanal/quickocm/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/mkhanal/quickocm">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p>QuickOCM - Parse and convert your CSV files to your models in your java application.</p>
+
+<h2>
+<a name="features" class="anchor" href="#features"><span class="octicon octicon-link"></span></a>Features</h2>
+
+<ol>
+<li>Significance of <strong>header</strong> in CSV.</li>
+<li>
+<strong>Annotation based</strong>, annotate your models with header-name, datatype, nested model structure.</li>
+<li>Supports <strong>nested object</strong> compositions in the models.</li>
+<li>Treats each record of the CSV as a model and will invoke user designated handler for each row i.e. model.</li>
+<li>
+<strong>Validation</strong> of the data-types in CSV automatically handled.</li>
+</ol><h2>
+<a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting Started</h2>
+
+<p>Assume your CSV, (first line are headers)</p>
+
+<pre><code>user name   , age   , Date Of JOiNinG , Referrer Code, Street Name  , House No, City
+phillips    , 23    , 19/09/1999      , referrer1    , south street , 12      , Timbak 1
+sri krishna , 25    , 20/12/2012      , referrer2    , north street , 24      , Timbak 2
+Jaquiline   , 44    ,                 , referrer3    , east street  , 36      , Timbak 3
+Who so ever , 20000 , 22/02/2010      , referrer4    , west street  , 48      , Timbak 4
+</code></pre>
+
+<p>To parse this, your model must extend importable. If your model User is composed of Address, you can see how nested values are being resolved. Notice all work is being done using the annotations @ImportField and @ImportFields. You need a default constructor for initialization. However, the objects this primary object do not have these restriction except for setters on the desired fields.</p>
+
+<pre><code>public class User implements Importable {
+  // Add getters and Setters. Setters are required to fill in values
+  // equals and hashcode for comparision in test
+
+  @ImportField(mandatory = true, name = "User Name", type = "String")
+  private String name;
+
+  @ImportField(mandatory = true, type = "int") //default header name = field name
+  private Integer age;
+
+  @ImportField(type = "Date", name = "date of joining") //case insensitive headers
+  private Date joiningDate;
+
+  @ImportField(type = "String", name = "Referrer Code", nested = "code")
+  private Referrer referrer;
+
+  @ImportFields(importFields = {
+    @ImportField(type = "String", name = "Street Name", nested = "streetName"),
+    @ImportField(type = "int", name = "House No", nested = "houseNo"),
+    @ImportField(type = "String", name = "City", nested = "city")})
+  private Address completeAddress;
+
+  public User() {
+  }
+
+  public User(String name, Integer age, Date joiningDate,
+              String referrerCode, String streetName,
+              Integer houseNo, String city) {
+    this.name = name;
+    this.age = age;
+    this.joiningDate = joiningDate;
+    this.referrer = new Referrer();
+    this.referrer.setCode(referrerCode);
+    this.completeAddress = new Address();
+    completeAddress.setCity(city);
+    completeAddress.setHouseNo(houseNo);
+    completeAddress.setStreetName(streetName);
+  }
+}
+
+public class Referrer {
+    // Getter and Setter
+    private String code;
+}
+
+
+public class Address {
+    //Getter and Setter
+    private Integer houseNo;
+    private String streetName;
+    private String city;
+}
+
+</code></pre>
+
+<p>For each row in CSV, your handler will be invoked. So create a handler</p>
+
+<pre><code>public class UserRecordHandler implements RecordHandler&lt;User&gt; {
+    //Getter
+    private List&lt;User&gt; uploadedUsers = new ArrayList&lt;User&gt;();
+
+    @Override
+    public void execute(User user, int rowNumber) {
+        uploadedUsers.add(user);
+    }
+
+}
+</code></pre>
+
+<p>This is it. The below code shows a simple test</p>
+
+<pre><code>public class UserUploadTest {
+  @Test
+  public void shouldUploadUserCsv() throws Exception {
+    CSVParser csvParser = new CSVParser();
+    UserRecordHandler userRecordHandler = new UserRecordHandler();
+    InputStream inputStream = new FileInputStream("user-upload.csv");
+
+    csvParser.process(inputStream, User.class, userRecordHandler);
+
+    List&lt;User&gt; uploadedUsers = userRecordHandler.getUploadedUsers();
+    assertThat(uploadedUsers.size(), is(4));
+    assertThat(uploadedUsers.get(0), is(new User(
+      "phillips", 23, getDate("19/09/1999"), "referrer1", "south street", 12, "Timbak 1")));
+    assertThat(uploadedUsers.get(1), is(new User(
+      "sri krishna", 25, getDate("20/12/2012"), "referrer2", "north street", 24, "Timbak 2")));
+    assertThat(uploadedUsers.get(2), is(new User(
+      "Jaquiline", 44, null, "referrer3", "east street", 36, "Timbak 3")));
+    assertThat(uploadedUsers.get(3), is(new User(
+      "Who so ever", 20000, getDate("22/02/2010"), "referrer4", "west street", 48, "Timbak 4")));
+  }
+
+  private Date getDate(String dateString) {
+    DateTimeFormatter formatter = DateTimeFormat.forPattern("dd/MM/yyyy");
+    return parse(dateString, formatter).toDate();
+  }
+}
+</code></pre>
+
+<p>The code shows that for each record, how the record handler was executed with the Object in question.</p>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/mkhanal">mkhanal</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>

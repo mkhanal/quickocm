@@ -14,10 +14,13 @@ import org.quickocm.model.DummyRecordHandler;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -48,7 +51,7 @@ public class CsvParserTest {
 
     csvParser.process(inputStream, DummyImportable.class, recordHandler);
 
-    List<DummyImportable> importedObjects = recordHandler.getImportedObjects();
+    List<DummyImportable> importedObjects = recordHandler.importedObjects;
     assertEquals(23, importedObjects.get(0).getMandatoryIntField());
     assertEquals("Random1", importedObjects.get(0).getMandatoryStringField());
     assertEquals(25, importedObjects.get(1).getMandatoryIntField());
@@ -56,11 +59,11 @@ public class CsvParserTest {
   }
 
   @Test
-  public void shouldParseFromFile() throws Exception {
+  public void shouldParseFromFileAndInvokeHandler() throws Exception {
     InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("test.csv");
 
     csvParser.process(inputStream, DummyImportable.class, recordHandler);
-    List<DummyImportable> importedObjects = recordHandler.getImportedObjects();
+    List<DummyImportable> importedObjects = recordHandler.importedObjects;
 
     final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("dd/MM/yyyy");
     DummyImportable random1 = new DummyImportable() {
@@ -193,8 +196,43 @@ public class CsvParserTest {
     InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
     csvParser.process(inputStream, DummyImportable.class, recordHandler);
-    DummyImportable dummyImportable = recordHandler.getImportedObjects().get(0);
+    DummyImportable dummyImportable = recordHandler.importedObjects.get(0);
     assertThat(dummyImportable.getDummyNestedField().getCode(), is("code1"));
+  }
+
+  @Test
+  public void shouldCallRecordHandlerWithSameSupplementaryInfoSuppliedToCsvParserForAllTheCsvRows() throws IOException {
+    String csvInput = "mandatory string field   , mandatoryIntField, OPTIONAL NESTED FIELD, OPTIONAL DATE FIELD\n" +
+      " Random1               , 23, code1, 19/1/1990\n" +
+      " Random2                , 25, code2,\n";
+
+    InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
+
+    class User {
+      public String id;
+      public String name;
+    }
+
+    User uploader = new User();
+    uploader.id = "uploader-id";
+    uploader.name = "uploader user";
+
+    Map supplymentaryInfo = new HashMap();
+    supplymentaryInfo.put("key", "value");
+    supplymentaryInfo.put("source", "csv upload");
+    supplymentaryInfo.put("uploader", uploader);
+
+    csvParser = new CsvParser<DummyImportable>(supplymentaryInfo);
+
+    csvParser.process(inputStream, DummyImportable.class, recordHandler);
+
+    List<Map> fetchedSupplementaryInfos = recordHandler.supplymentaryMaps;
+    assertThat(fetchedSupplementaryInfos.size(), is(2));
+    assertThat(fetchedSupplementaryInfos.get(0), sameInstance(fetchedSupplementaryInfos.get(1)));
+    assertThat((String) fetchedSupplementaryInfos.get(0).get("key"), is("value"));
+    assertThat((String) fetchedSupplementaryInfos.get(0).get("source"), is("csv upload"));
+    assertThat((User) fetchedSupplementaryInfos.get(0).get("uploader"), is(uploader));
+
   }
 
   @Test
@@ -206,7 +244,7 @@ public class CsvParserTest {
     InputStream inputStream = new ByteArrayInputStream(csvInput.getBytes(ENCODING));
 
     csvParser.process(inputStream, DummyImportable.class, recordHandler);
-    DummyImportable dummyImportable = recordHandler.getImportedObjects().get(0);
+    DummyImportable dummyImportable = recordHandler.importedObjects.get(0);
     assertThat(dummyImportable.getMultipleNestedFields().getEntityCode1(), is("code1-1"));
     assertThat(dummyImportable.getMultipleNestedFields().getEntityCode2(), is("code1-2"));
   }

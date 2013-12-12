@@ -5,13 +5,13 @@ package org.quickocm;
  * Each record handler is meant to process one type of object that is maps to a row of the CSV file.
  */
 
-public interface RecordHandler<I extends Importable> {
+public interface RecordHandler<I> {
 
   /**
-   * execute method is called for each row of the csv after it parses a row into an Importable type of instance.
+   * execute method is called for each row of the csv after it parses a row into an equivalent object.
    *
-   * @param importable the object parsed equivalent to a csv row
+   * @param imported  the object parsed equivalent to a csv row
    * @param rowNumber the row number of the line in csv
    */
-  public void execute(I importable, int rowNumber);
+  public void execute(I imported, int rowNumber);
 }

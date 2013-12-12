@@ -1,6 +1,5 @@
 package org.quickocm.parser;
 
-import org.quickocm.Importable;
 import org.quickocm.model.ModelClass;
 import org.quickocm.processor.CsvCellProcessors;
 import org.supercsv.cellprocessor.ift.CellProcessor;
@@ -15,53 +14,53 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 
-public class CsvBeanReader {
+public class CsvBeanReader<I> {
 
-    private ModelClass modelClass;
-    private CsvDozerBeanReader dozerBeanReader;
-    private CellProcessor[] processors;
-    private String[] headers;
+  private ModelClass modelClass;
+  private CsvDozerBeanReader dozerBeanReader;
+  private CellProcessor[] processors;
+  private String[] headers;
 
-    public CsvBeanReader(ModelClass modelClass, InputStream inputStream) throws IOException {
-        this(modelClass, inputStream, new CsvPreference.Builder(CsvPreference.STANDARD_PREFERENCE)
-                .surroundingSpacesNeedQuotes(true).build());
-    }
+  public CsvBeanReader(ModelClass modelClass, InputStream inputStream) throws IOException {
+    this(modelClass, inputStream, new CsvPreference.Builder(CsvPreference.STANDARD_PREFERENCE)
+      .surroundingSpacesNeedQuotes(true).build());
+  }
 
-    public CsvBeanReader(ModelClass modelClass, InputStream inputStream, CsvPreference csvPreference) throws IOException {
-        this.modelClass = modelClass;
-        configureDozerBeanReader(inputStream, csvPreference);
-        configureProcessors();
-    }
+  public CsvBeanReader(ModelClass modelClass, InputStream inputStream, CsvPreference csvPreference) throws IOException {
+    this.modelClass = modelClass;
+    configureDozerBeanReader(inputStream, csvPreference);
+    configureProcessors();
+  }
 
-    public Importable read() throws IOException {
-        return dozerBeanReader.read(modelClass.getClazz(), processors);
-    }
+  public I read() throws IOException {
+    return (I) dozerBeanReader.read(modelClass.getClazz(), processors);
+  }
 
-    public int getRowNumber() {
-        return dozerBeanReader.getRowNumber();
-    }
+  public int getRowNumber() {
+    return dozerBeanReader.getRowNumber();
+  }
 
-    public int length() {
-        return dozerBeanReader.length();
-    }
+  public int length() {
+    return dozerBeanReader.length();
+  }
 
-    public void validateHeaders() {
-        modelClass.validateHeaders(asList(headers));
-    }
+  public void validateHeaders() {
+    modelClass.validateHeaders(asList(headers));
+  }
 
-    public String[] getHeaders() {
-        return headers;
-    }
+  public String[] getHeaders() {
+    return headers;
+  }
 
-    private void configureDozerBeanReader(InputStream inputStream, CsvPreference csvPreference) throws IOException {
-        dozerBeanReader = new CsvDozerBeanReader(new BufferedReader(new InputStreamReader(inputStream)), csvPreference);
-        headers = dozerBeanReader.getHeader(true);
-        String[] mappings = modelClass.getFieldNameMappings(headers);
-        dozerBeanReader.configureBeanMapping(modelClass.getClazz(), mappings);
-    }
+  private void configureDozerBeanReader(InputStream inputStream, CsvPreference csvPreference) throws IOException {
+    dozerBeanReader = new CsvDozerBeanReader(new BufferedReader(new InputStreamReader(inputStream)), csvPreference);
+    headers = dozerBeanReader.getHeader(true);
+    String[] mappings = modelClass.getFieldNameMappings(headers);
+    dozerBeanReader.configureBeanMapping(modelClass.getClazz(), mappings);
+  }
 
-    private void configureProcessors() {
-        List<CellProcessor> cellProcessors = new CsvCellProcessors().getProcessors(modelClass, asList(headers));
-        processors = cellProcessors.toArray(new CellProcessor[cellProcessors.size()]);
-    }
+  private void configureProcessors() {
+    List<CellProcessor> cellProcessors = new CsvCellProcessors().getProcessors(modelClass, asList(headers));
+    processors = cellProcessors.toArray(new CellProcessor[cellProcessors.size()]);
+  }
 }

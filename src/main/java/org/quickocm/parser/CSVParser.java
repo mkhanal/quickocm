@@ -1,6 +1,5 @@
 package org.quickocm.parser;
 
-import org.quickocm.Importable;
 import org.quickocm.RecordHandler;
 import org.quickocm.exception.UploadException;
 import org.quickocm.model.ModelClass;
@@ -16,7 +15,7 @@ import java.io.InputStream;
 /**
  * This is the API point which initiates csv parsing and invokes <code>RecordHandler</code> for each file
  */
-public class CSVParser {
+public class CSVParser<I> {
 
   /**
    * Processes a csv input stream for the given type and invokes designated record handler for each field.
@@ -34,7 +33,7 @@ public class CSVParser {
    *                         6. input stream can not be read
    *                         7. has columns with data in invalid format
    */
-  public int process(InputStream inputStream, Class clazz, RecordHandler recordHandler)
+  public int process(InputStream inputStream, Class clazz, RecordHandler<I> recordHandler)
     throws UploadException {
 
     CsvBeanReader csvBeanReader = null;
@@ -47,15 +46,11 @@ public class CSVParser {
       invokeRecordHandlerForEachRow(recordHandler, csvBeanReader);
 
     } catch (SuperCsvConstraintViolationException e) {
-      String error = getErrorMessageForMissingFieldOrInvalidDate(e);
-
-      throwUploadExceptionForInvalidData(error, headers, e);
-
+      throwUploadExceptionForInvalidData(getErrorMessageForMissingFieldOrInvalidDate(e), headers, e);
     } catch (SuperCsvCellProcessorException processorException) {
       throwUploadExceptionForInvalidData("incorrect.data.type", headers, processorException);
     } catch (SuperCsvException e) {
-      String error = getErrorMessageForHeaderCount(csvBeanReader, headers);
-      throwUploadExceptionForInvalidData(error, headers, e);
+      throwUploadExceptionForInvalidData(getErrorMessageForHeaderCount(csvBeanReader, headers), headers, e);
     } catch (IOException e) {
       throw new UploadException(e.getStackTrace().toString());
     }
@@ -75,8 +70,8 @@ public class CSVParser {
       : "fewer.columns.than.headers.found";
   }
 
-  private void invokeRecordHandlerForEachRow(RecordHandler recordHandler, CsvBeanReader csvBeanReader) throws IOException {
-    Importable importedModel;
+  private void invokeRecordHandlerForEachRow(RecordHandler<I> recordHandler, CsvBeanReader<I> csvBeanReader) throws IOException {
+    I importedModel;
     while ((importedModel = csvBeanReader.read()) != null) {
       recordHandler.execute(importedModel, csvBeanReader.getRowNumber());
     }

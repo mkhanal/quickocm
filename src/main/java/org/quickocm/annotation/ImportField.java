@@ -16,7 +16,7 @@ public @interface ImportField {
    * Marks if the field is mandatory or not.
    * The default value is false
    */
-    boolean mandatory() default false;
+  boolean mandatory() default false;
 
   /**
    * States the data type of a field. By default it is <code>String</code>
@@ -24,8 +24,19 @@ public @interface ImportField {
    *
    * @return
    */
-    String type() default "String";
-    String name() default "";
-    String nested() default "";
-    String validator() default "";
+  String type() default "String";
+
+  /**
+   * The name of the header that should be mapped to this name
+   *
+   * @return
+   */
+  String name() default "";
+
+  /**
+   * Reflects if the property is a direct setter for this object, or a nested field
+   *
+   * @return
+   */
+  String nested() default "";
 }

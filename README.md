@@ -1,4 +1,4 @@
-quickocm
+QuickOCM
 ========
 
 CSV to Object converter for Java.

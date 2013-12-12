@@ -3,4 +3,4 @@ quickocm
 
 CSV to Object converter for Java.
 
-mkhanal.github.io/quickocm
+[QuickOCM docs](http://mkhanal.github.io/quickocm/)

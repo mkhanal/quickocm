@@ -15,7 +15,7 @@ import java.io.InputStream;
 /**
  * This is the API point which initiates csv parsing and invokes <code>RecordHandler</code> for each file
  */
-public class CSVParser<I> {
+public class CsvParser<I> {
 
   /**
    * Processes a csv input stream for the given type and invokes designated record handler for each field.

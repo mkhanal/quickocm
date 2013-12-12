@@ -21,11 +21,11 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class CSVParserTest {
+public class CsvParserTest {
 
   public static final String ENCODING = "UTF-8";
 
-  private CSVParser<DummyImportable> csvParser;
+  private CsvParser<DummyImportable> csvParser;
   private DummyRecordHandler recordHandler;
 
   @Rule
@@ -33,7 +33,7 @@ public class CSVParserTest {
 
   @Before
   public void setUp() throws Exception {
-    csvParser = new CSVParser();
+    csvParser = new CsvParser();
     recordHandler = new DummyRecordHandler();
   }
 

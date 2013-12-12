@@ -24,11 +24,11 @@ import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class CsvParserTest {
+public class CsvParserMacRenameIssueTest {
 
   public static final String ENCODING = "UTF-8";
 
-  private CsvParser<DummyImportable> csvParser;
+  private CsvParserMacRenameIssue<DummyImportable> csvParser;
   private DummyRecordHandler recordHandler;
 
   @Rule
@@ -36,7 +36,7 @@ public class CsvParserTest {
 
   @Before
   public void setUp() throws Exception {
-    csvParser = new CsvParser();
+    csvParser = new CsvParserMacRenameIssue();
     recordHandler = new DummyRecordHandler();
   }
 
@@ -222,7 +222,7 @@ public class CsvParserTest {
     supplymentaryInfo.put("source", "csv upload");
     supplymentaryInfo.put("uploader", uploader);
 
-    csvParser = new CsvParser<DummyImportable>(supplymentaryInfo);
+    csvParser = new CsvParserMacRenameIssue<DummyImportable>(supplymentaryInfo);
 
     csvParser.process(inputStream, DummyImportable.class, recordHandler);
 

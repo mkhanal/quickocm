@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * This is the API point which initiates csv parsing and invokes <code>RecordHandler</code> for each file
  */
-public class CsvParser<I> {
+public class CsvParserMacRenameIssue<I> {
 
 
   /**
@@ -36,7 +36,7 @@ public class CsvParser<I> {
   /**
    * This api creates a CsvParser that has null <code>supplementaryInfo</code>
    */
-  public CsvParser() {
+  public CsvParserMacRenameIssue() {
     this(null);
   }
 
@@ -45,7 +45,7 @@ public class CsvParser<I> {
    *
    * @param supplementaryInfo The supplementaryInfo to be passed to the record handler for each row in CSV.
    */
-  public CsvParser(Map supplementaryInfo) {
+  public CsvParserMacRenameIssue(Map supplementaryInfo) {
     this.supplementaryInfo = supplementaryInfo;
   }
 

@@ -52,16 +52,24 @@ Jaquiline   , 44    ,                 , referrer3    , east street  , 36      , 
 Who so ever , 20000 , 22/02/2010      , referrer4    , west street  , 48      , Timbak 4
 </code></pre>
 
-<p>To parse this, your model must extend importable. If your model User is composed of Address, you can see how nested values are being resolved. Notice all work is being done using the annotations @ImportField and @ImportFields. You need a default constructor for initialization. However, the objects this primary object do not have these restriction except for setters on the desired fields.</p>
+<p>To parse this, you need :
+  <ul>
+    <li>An equivalent Model 
+    <li>Annotations @ImportField and @ImportFields over corresponding fileds.
+    <ol>
+      <li>Default constructor.
+      <li>Setters for fields to be set.
+    </ol>
+    If your model User is composed of Address, you can see how nested values are being resolved. 
+    
+</p>
 
-<pre><code>public class User implements Importable {
-  // Add getters and Setters. Setters are required to fill in values
-  // equals and hashcode for comparision in test
-
+<pre><code>public class User {
+  //Getter, Setter, Default Constructor
   @ImportField(mandatory = true, name = "User Name", type = "String")
   private String name;
 
-  @ImportField(mandatory = true, type = "int") //default header name = field name
+  @ImportField(mandatory = true, type = "int") //default -> header name = field name
   private Integer age;
 
   @ImportField(type = "Date", name = "date of joining") //case insensitive headers
@@ -76,32 +84,16 @@ Who so ever , 20000 , 22/02/2010      , referrer4    , west street  , 48      , 
     @ImportField(type = "String", name = "City", nested = "city")})
   private Address completeAddress;
 
-  public User() {
-  }
-
-  public User(String name, Integer age, Date joiningDate,
-              String referrerCode, String streetName,
-              Integer houseNo, String city) {
-    this.name = name;
-    this.age = age;
-    this.joiningDate = joiningDate;
-    this.referrer = new Referrer();
-    this.referrer.setCode(referrerCode);
-    this.completeAddress = new Address();
-    completeAddress.setCity(city);
-    completeAddress.setHouseNo(houseNo);
-    completeAddress.setStreetName(streetName);
-  }
+  private String createdBy; //logged in user not present in csv file, can be pulled from session
 }
 
 public class Referrer {
-    // Getter and Setter
+    //Getter, Setter, Default Constructor
     private String code;
 }
 
-
 public class Address {
-    //Getter and Setter
+    //Getter, Setter, Default Constructor
     private Integer houseNo;
     private String streetName;
     private String city;
@@ -112,48 +104,64 @@ public class Address {
 <p>For each row in CSV, your handler will be invoked. So create a handler</p>
 
 <pre><code>public class UserRecordHandler implements RecordHandler&lt;User&gt; {
-    //Getter
-    private List&lt;User&gt; uploadedUsers = new ArrayList&lt;User&gt;();
+  //Getter
+  private List&lt;User&gt; uploadedUsers = new ArrayList&lt;User&gt;();
 
-    @Override
-    public void execute(User user, int rowNumber) {
-        uploadedUsers.add(user);
-    }
-
+  @Override
+  public void execute(User user, int i, Map map) {
+    user.setCreatedBy((String) map.get("loggedInUser"));
+    uploadedUsers.add(user);
+  }
 }
 </code></pre>
 
 <p>This is it. The below code shows a simple test</p>
 
-<pre><code>public class UserUploadTest {
+<pre><code>
+public class UserRecordHandlerTest {
+
+  private CsvParser&lt;User&gt; csvParser;
+
+  @Before
+  public void setUp() throws Exception {
+    Map&lt;String, String&gt; supplementaryInfo = new HashMap&lt;String, String&gt;() {{
+      put("loggedInUser", "User123");
+    }};
+
+    csvParser = new CsvParser&lt;User&gt;(supplementaryInfo);
+  }
+
   @Test
-  public void shouldUploadUserCsv() throws Exception {
-    CSVParser csvParser = new CSVParser();
+  public void shouldParseCsvFileAndGetAllUsers() throws Exception {
+    String csvContent =
+        "User Name  , Age  , Date Of JOiNinG, Referrer Code, Street Name , House No, City\n" +
+        "phillips   , 23   , 19/09/1999     , referrer1    , south street, 12      , Timbak 1\n" +
+        "sri krishna, 25   , 20/12/2012     , referrer2    , north street, 24      , Timbak 2\n" +
+        "Jaquiline  , 44   ,                , referrer3    , east street , 36      , Timbak 3\n" +
+        "Who so ever, 20000, 22/02/2010     , referrer4    , west street , 48      , Timbak 4";
+
+    InputStream inputStream = new ByteInputStream(csvContent.getBytes(), csvContent.length());
     UserRecordHandler userRecordHandler = new UserRecordHandler();
-    InputStream inputStream = new FileInputStream("user-upload.csv");
 
     csvParser.process(inputStream, User.class, userRecordHandler);
 
-    List&lt;User&gt; uploadedUsers = userRecordHandler.getUploadedUsers();
-    assertThat(uploadedUsers.size(), is(4));
-    assertThat(uploadedUsers.get(0), is(new User(
-      "phillips", 23, getDate("19/09/1999"), "referrer1", "south street", 12, "Timbak 1")));
-    assertThat(uploadedUsers.get(1), is(new User(
-      "sri krishna", 25, getDate("20/12/2012"), "referrer2", "north street", 24, "Timbak 2")));
-    assertThat(uploadedUsers.get(2), is(new User(
-      "Jaquiline", 44, null, "referrer3", "east street", 36, "Timbak 3")));
-    assertThat(uploadedUsers.get(3), is(new User(
-      "Who so ever", 20000, getDate("22/02/2010"), "referrer4", "west street", 48, "Timbak 4")));
-  }
+    SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
 
-  private Date getDate(String dateString) {
-    DateTimeFormatter formatter = DateTimeFormat.forPattern("dd/MM/yyyy");
-    return parse(dateString, formatter).toDate();
+    List&lt;User&gt; uploadedUsers = userRecordHandler.getUploadedUsers();
+    assertEquals(4, uploadedUsers.size());<br/>
+    assertThat(uploadedUsers.get(0), isSameUser(new User(
+    "phillips", 23, format.parse("19/09/1999"), "referrer1", "south street", 12, "Timbak 1", "User123")));<br/>
+    assertThat(uploadedUsers.get(1), isSameUser(new User(
+    "sri krishna", 25, format.parse("20/12/2012"), "referrer2", "north street", 24, "Timbak 2", "User123")));<br/>
+    assertThat(uploadedUsers.get(2), isSameUser(new User(
+    "Jaquiline", 44, null, "referrer3", "east street", 36, "Timbak 3", "User123")));<br/>
+    assertThat(uploadedUsers.get(3), isSameUser(new User(
+    "Who so ever", 20000, format.parse("22/02/2010"), "referrer4", "west street", 48, "Timbak 4", "User123")));<br/>
   }
 }
-</code></pre>
 
-<p>The code shows that for each record, how the record handler was executed with the Object in question.</p>
+</code></pre>
+<p>The code shows that for each record, how the record handler was executed with the Object in question. Also note how extra information like audit info was passed through supplementaryInfo map</p>
       </section>
     </div>
     <footer>
